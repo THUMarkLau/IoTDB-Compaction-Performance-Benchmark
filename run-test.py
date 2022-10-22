@@ -1,17 +1,12 @@
-import argparse
+import multiprocessing
 import os
-import sys
 import re
 import shutil
-import multiprocessing
+import sys
 import time
 import zipfile
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-b', '--branch', default="master")
-parser.add_argument('-c', '--commit', default="HEAD")
-parser.add_argument('-r', '--repository', default="https://github.com/apache/iotdb")
-args = parser.parse_args()
+from parser import args
 
 repository = args.repository
 branch = args.branch
