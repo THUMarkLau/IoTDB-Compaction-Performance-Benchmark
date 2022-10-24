@@ -1,4 +1,5 @@
 import os
+import sys
 from math import floor
 from time import time
 
@@ -18,6 +19,10 @@ URLS = {
     "massive_page_overlap_aligned": "https://cloud.tsinghua.edu.cn/f/33f130acae8d4fe1bf1a/?dl=1",
 }
 
+MD5_SUM = {
+    "non_file_overlap": "6b44c7d6e5a7a184b553070029332be2"
+}
+
 
 class TestDataManager:
     def __init__(self, data_dir="data"):
@@ -33,39 +38,68 @@ class TestDataManager:
         elif name in URLS:
             self._download_one_data_set(URLS[name], name)
         else:
-            self._log.error("Cannot find", name, "in", str(URLS.keys()), ", failed to download")
+            self._log.error("Cannot find " + name + " in " + str(URLS.keys()) + ", failed to download")
 
     def _download_one_data_set(self, url, name):
         if os.path.exists(os.path.join(self._data_dir, name + ".7z")):
             return
 
+        md5_right = MD5_SUM[name]
+
         with get(url, stream=True) as r:
+            file_size = 0
             if r.headers.get('Content-Length'):
-                b = int(r.headers.get('Content-Length')) / 1024 / 1024
-                print("ResourceSize:", b, "MB")
+                file_size = int(r.headers.get('Content-Length'))
+                b = file_size / 1024 / 1024
+                self._log.info("ResourceSize: " + str(b) + " MB")
             else:
-                print("ResourceSize: 0 MB")
+                self._log.info("ResourceSize: 0 MB")
 
-            print('-' * 32)
-            chunk_size = 1048
+            chunk_size = 2048
 
-            print('-' * 32)
-            print("Downloading")
-            c = url.split(".")
+            self._log.info("Downloading " + os.path.join(self._data_dir, name + ".7z"))
             a = time()
+            total_size = 0
+            chunk_num = 0
             with open(os.path.join(self._data_dir, name + ".7z"), "wb") as code:
                 for chunk in r.iter_content(chunk_size=chunk_size):
                     code.write(chunk)
                     code.flush()
+                    total_size += len(chunk)
+                    chunk_num += 1
+                    if chunk_num % 1000 == 0:
+                        self._log.info("Downloading " + name + ".7z %.2f MB/ %.2fMB %.2f %% " % (
+                            total_size / 1024 / 1024, file_size / 1024 / 1024, total_size / file_size * 100.0))
                 code.close()
             a = time() - a
             if a != 0:
-                print("Write Speed", floor((b / a) * 100) / 100, "MB/s")
+                self._log.info("Write Speed" + str(floor((b / a) * 100) / 100) + " MB/s")
             else:
-                print("Write Speed：0 MB/s")
-            print('-' * 32)
+                self._log.info("Write Speed：0 MB/s")
+
+        md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name + ".7z"))
+        md5_sum = md5_check.read().split(" ")[0]
+        if md5_sum != md5_right:
+            self._log.error("Wanted md5: " + md5_right +", but get md5: " + md5_sum)
+
+    def unzip(self, name="all"):
+        if name == "all":
+            for n in URLS.keys():
+                self._unzip_one_data_set(n)
+        elif name in URLS:
+            self._unzip_one_data_set(name)
+
+    def _unzip_one_data_set(self, name):
+        if os.path.exists(os.path.join(self._data_dir, name + ".7z")):
+            if os.path.exists(os.path.join(self._data_dir, name)):
+                return
+            self._log.info("Unzipping " + name + ".7z")
+            os.system(
+                "7z x " + os.path.join(self._data_dir, name + ".7z") + " -r -o" + os.path.join(self._data_dir,
+                                                                                               name))
 
 
 if __name__ == '__main__':
-    manager = TestDataManager("test")
-    manager.download_test_data("non_file_overlap")
+    manager = TestDataManager(sys.argv[1])
+    manager.download_test_data(sys.argv[2])
+    manager.unzip()
