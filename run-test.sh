@@ -4,6 +4,7 @@ BRANCH="master"
 COMMIT="HEAD"
 DATASET="all"
 NEW_CLONE="false"
+SKIP_MD5="false"
 
 while [[ $# -gt 0 ]];do
   key=${1}
@@ -26,6 +27,10 @@ while [[ $# -gt 0 ]];do
       ;;
     -nc|--new_clone)
       NEW_CLONE=${2}
+      shift 2
+      ;;
+    -smd|--skip_md5)
+      SKIP_MD5=${2}
       shift 2
       ;;
     *)
@@ -51,7 +56,6 @@ wait_unseq_clear() {
   echo Waiting compaction to start
   while [ $cross_file_num -eq 0 ]
   do
-    pwd
     cross_file_num=`find data/datanode/data/sequence -name "*.cross" | wc -l`
     sleep 1s
   done
@@ -173,7 +177,7 @@ set_iotdb_config() {
 download_dataset() {
   echo Downloading dataset $1
   # shellcheck disable=SC2164
-  python3 ./test_data_manager.py test-data $1
+  python3 ./test_data_manager.py test-data $1 "${SKIP_MD5}"
 }
 
 test_all() {

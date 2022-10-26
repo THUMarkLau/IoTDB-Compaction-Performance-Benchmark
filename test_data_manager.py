@@ -7,6 +7,7 @@ from requests import get
 from log4py import Logger
 
 Logger.set_level("INFO")
+SKIP_MK5=False
 
 URLS = {
     "non_file_overlap": "https://cloud.tsinghua.edu.cn/f/b08a9c7915944ff08a18/?dl=1",
@@ -51,10 +52,13 @@ class TestDataManager:
 
     def _download_one_data_set(self, url, name):
         if os.path.exists(os.path.join(self._data_dir, name + ".7z")):
-            md5_right = MD5_SUM[name]
-            md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name + ".7z"))
-            md5_sum = md5_check.read().split(" ")[0]
-            return md5_sum == md5_right
+            if not SKIP_MK5:
+                md5_right = MD5_SUM[name]
+                md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name + ".7z"))
+                md5_sum = md5_check.read().split(" ")[0]
+                return md5_sum == md5_right
+            else:
+                return True
 
         md5_right = MD5_SUM[name]
 
@@ -89,11 +93,12 @@ class TestDataManager:
             else:
                 self._log.info("Write Speed：0 MB/s")
 
-        md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name + ".7z"))
-        md5_sum = md5_check.read().split(" ")[0]
-        if md5_sum != md5_right:
-            self._log.error("Wanted md5: " + md5_right +", but get md5: " + md5_sum)
-            return False
+        if not SKIP_MK5:
+            md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name + ".7z"))
+            md5_sum = md5_check.read().split(" ")[0]
+            if md5_sum != md5_right:
+                self._log.error("Wanted md5: " + md5_right +", but get md5: " + md5_sum)
+                return False
         return True
 
     def unzip(self, name="all"):
@@ -114,6 +119,8 @@ class TestDataManager:
 
 
 if __name__ == '__main__':
+    if len(sys.argv) >= 3:
+        SKIP_MK5 = bool(sys.argv[3])
     manager = TestDataManager(sys.argv[1])
     manager.download_test_data(sys.argv[2])
     manager.unzip()
