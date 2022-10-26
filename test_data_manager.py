@@ -20,7 +20,14 @@ URLS = {
 }
 
 MD5_SUM = {
-    "non_file_overlap": "6b44c7d6e5a7a184b553070029332be2"
+    "non_file_overlap": "6b44c7d6e5a7a184b553070029332be2",
+    "non_file_overlap_aligned": "a37fb632a3a0b0f7fedc9c5d1e2f29ea",
+    "non_chunk_overlap": "8fea761e96b7e6266b27380a2c1fd196",
+    "non_chunk_overlap_aligned": "5f045a3d1e00fe3d689b72a6b7fc2b65",
+    "multi_page_overlap": "03133b9515f52ce381e8771ec2de7df8",
+    "multi_page_overlap_aligned": "7fd7d9ea568ba26fae7f24e4c0c7e59c",
+    "massive_page_overlap": "873c7ca87891a14c438048c51f4564a8",
+    "massive_page_overlap_aligned": "2b95f2bd41e2e3c66e9478b5e5fe5888"
 }
 
 
@@ -33,16 +40,21 @@ class TestDataManager:
 
     def download_test_data(self, name="all"):
         if name == "all":
-            for name, url in URLS:
-                self._download_one_data_set(url, name)
-        elif name in URLS:
-            self._download_one_data_set(URLS[name], name)
+            for name in URLS.keys():
+                while not self._download_one_data_set(URLS[name], name):
+                    os.remove(os.path.join(self._data_dir, name + ".7z"))
+        elif name in URLS.keys():
+            while not self._download_one_data_set(URLS[name], name):
+                os.remove(os.path.join(self._data_dir, name + ".7z"))
         else:
             self._log.error("Cannot find " + name + " in " + str(URLS.keys()) + ", failed to download")
 
     def _download_one_data_set(self, url, name):
         if os.path.exists(os.path.join(self._data_dir, name + ".7z")):
-            return
+            md5_right = MD5_SUM[name]
+            md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name + ".7z"))
+            md5_sum = md5_check.read().split(" ")[0]
+            return md5_sum == md5_right
 
         md5_right = MD5_SUM[name]
 
@@ -81,6 +93,8 @@ class TestDataManager:
         md5_sum = md5_check.read().split(" ")[0]
         if md5_sum != md5_right:
             self._log.error("Wanted md5: " + md5_right +", but get md5: " + md5_sum)
+            return False
+        return True
 
     def unzip(self, name="all"):
         if name == "all":
