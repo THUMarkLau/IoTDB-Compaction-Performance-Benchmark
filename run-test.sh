@@ -133,10 +133,16 @@ clone_and_compile_iotdb() {
     if [ "${NEW_CLONE}" == "true" ]
     then
       rm -rf iotdb
-      git clone "${REPOSITORY}" || exit
+      while [ ! -e "iotdb" ]
+      do
+        git clone "${REPOSITORY}"
+      done
     fi
   else
-    git clone "${REPOSITORY}" || exit
+    while [ ! -e "iotdb" ]
+    do
+      git clone "${REPOSITORY}"
+    done
   fi
 
 
