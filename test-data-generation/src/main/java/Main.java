@@ -34,9 +34,9 @@ public class Main {
     // Because of the encoding of time, the size of timestamp can be nearly ignored
     // We estimate the size of time as 1 byte
     int stepForUnseq =
-        (int) Math.ceil(sizeForEachUnseqFile * 1.0d / Args.deviceNum / Args.seriesNum / 8.5);
+        (int) Math.ceil(sizeForEachUnseqFile * 1.0d / Args.deviceNum / Args.seriesNum / 8);
     int stepForSeq =
-        (int) Math.ceil(sizeForEachSeqFile * 1.0d / Args.deviceNum / Args.seriesNum / 8.5);
+        (int) Math.ceil(sizeForEachSeqFile * 1.0d / Args.deviceNum / Args.seriesNum / 8);
     File dataDir =
         new File(
             Args.dataRootDir
@@ -72,9 +72,9 @@ public class Main {
         (long) (Args.totalFileSize * Args.unseqFileSizeRatio / Args.unseqFileNum);
     long sizeForEachSeqFile = (long) (Args.totalFileSize * Args.seqFileSizeRatio / Args.seqFileNum);
     int stepForUnseq =
-        (int) Math.ceil(sizeForEachUnseqFile * 1.0d / Args.deviceNum / Args.seriesNum / 8.5);
+        (int) Math.ceil(sizeForEachUnseqFile * 1.0d / Args.deviceNum / Args.seriesNum / 8);
     int stepForSeq =
-        (int) Math.ceil(sizeForEachSeqFile * 1.0d / Args.deviceNum / Args.seriesNum / 8.5);
+        (int) Math.ceil(sizeForEachSeqFile * 1.0d / Args.deviceNum / Args.seriesNum / 8);
     File dataDir =
         new File(
             Args.dataRootDir
