@@ -7,7 +7,7 @@ from requests import get
 from log4py import Logger
 
 Logger.set_level("INFO")
-SKIP_MK5 = False
+SKIP_MK5 = True
 
 URLS = {
     "non_file_overlap": ["https://cloud.tsinghua.edu.cn/f/b08a9c7915944ff08a18/?dl=1"],
@@ -18,6 +18,16 @@ URLS = {
     "multi_page_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/e82d3e1b6883452eb6f2/?dl=1"],
     "massive_page_overlap": ["https://cloud.tsinghua.edu.cn/f/f43271c0a2164ac49b7e/?dl=1"],
     "massive_page_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/33f130acae8d4fe1bf1a/?dl=1"],
+    "non_chunk_overlap_1G": ["https://cloud.tsinghua.edu.cn/f/87a545a852644d1695d4/?dl=1"],
+    "non_chunk_overlap_2G": ["https://cloud.tsinghua.edu.cn/f/28f9c42f5fae4397b568/?dl=1"],
+    "non_chunk_overlap_3G": ["https://cloud.tsinghua.edu.cn/f/aa60778332d74674bd91/?dl=1",
+                             "https://cloud.tsinghua.edu.cn/f/bfa5e6bba89849a6bee6/?dl=1"],
+    "non_chunk_overlap_1seq_9unseq": ["https://cloud.tsinghua.edu.cn/f/1af3aaf69ffb433e9123/?dl=1",
+                                      "https://cloud.tsinghua.edu.cn/f/761cba4b3c38403dbede/?dl=1",
+                                      "https://cloud.tsinghua.edu.cn/f/816fc6a236ec4d1a8d51/?dl=1"],
+    "non_chunk_overlap_3seq_7unseq": ["https://cloud.tsinghua.edu.cn/f/15a952fe7846407a89bc/?dl=1",
+                                      "https://cloud.tsinghua.edu.cn/f/f7642ba5e7564dcd96d1/?dl=1",
+                                      "https://cloud.tsinghua.edu.cn/f/c3a6f6d529754562ac9b/?dl=1"],
 }
 
 MD5_SUM = {
@@ -39,7 +49,14 @@ FILE_NAMES = {
     "multi_page_overlap": ["multi_page_overlap.7z"],
     "multi_page_overlap_aligned": ["multi_page_overlap_aligned.7z"],
     "massive_page_overlap": ["massive_page_overlap.7z"],
-    "massive_page_overlap_aligned": ["massive_page_overlap_aligned.7z"]
+    "massive_page_overlap_aligned": ["massive_page_overlap_aligned.7z"],
+    "non_chunk_overlap_1G": ["non_chunk_overlap_1G.7z"],
+    "non_chunk_overlap_2G": ["non_chunk_overlap_2G.7z"],
+    "non_chunk_overlap_3G": ["non_chunk_overlap_3GB.7z.001", "non_chunk_overlap_3GB.7z.002"],
+    "non_chunk_overlap_1seq_9unseq": ["non_chunk_overlap_1seq_9unseq.7z.001", "non_chunk_overlap_1seq_9unseq.7z.002",
+                                      "non_chunk_overlap_1seq_9unseq.7z.003"],
+    "non_chunk_overlap_3seq_7unseq": ["non_chunk_overlap_3seq_7unseq.7z.001", "non_chunk_overlap_3seq_7unseq.7z.002",
+                                      "non_chunk_overlap_3seq_7unseq.7z.003"],
 }
 
 
@@ -131,7 +148,7 @@ class TestDataManager:
         self._log.info("Unzipping " + dataset_name + ".7z")
         os.system(
             "7z x " + os.path.join(self._data_dir, file_names[0]) + " -r -o" + os.path.join(self._data_dir,
-                                                                                                       dataset_name))
+                                                                                            dataset_name))
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/benchmark/bash
 REPOSITORY="https://github.com/apache/iotdb"
 BRANCH="master"
 COMMIT="HEAD"
