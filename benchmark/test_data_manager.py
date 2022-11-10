@@ -84,6 +84,10 @@ FILE_NAMES = {
                                       "non_chunk_overlap_9seq_1unseq.7z.003"]
 }
 
+GOOD_DATASET = {"non_file_overlap", "non_file_overlap_aligned", "non_chunk_overlap", "non_chunk_overlap_aligned",
+                "multi_page_overlap", "multi_page_overlap_aligned", "massive_page_overlap",
+                "massive_page_overlap_aligned"}
+
 
 class TestDataManager:
     def __init__(self, data_dir="data"):
@@ -174,6 +178,23 @@ class TestDataManager:
         os.system(
             "7z x " + os.path.join(self._data_dir, file_names[0]) + " -r -o" + os.path.join(self._data_dir,
                                                                                             dataset_name))
+        if dataset_name not in GOOD_DATASET:
+            dir_name = os.popen("ls " + os.path.join(self._data_dir, dataset_name)).read().split("\n")[0]
+            os.system("mv " + os.path.join(self._data_dir, dataset_name, dir_name) + " " + os.path.join(self._data_dir,
+                                                                                                        dataset_name,
+                                                                                                        "data"))
+            print("mkdir " + os.path.join(self._data_dir, dataset_name, "data", "data", "sequence", "root.test"))
+            os.system("mkdir " + os.path.join(self._data_dir, dataset_name, "data", "data", "sequence", "root.test"))
+            print("mv " + os.path.join(self._data_dir, dataset_name, "data", "data", "sequence", "0") + " " + os.path.join(
+                self._data_dir, dataset_name, "data", "data", "sequence", "root.test"))
+            os.system("mv " + os.path.join(self._data_dir, dataset_name, "data", "data", "sequence", "0") + " " + os.path.join(
+                self._data_dir, dataset_name, "data", "data", "sequence", "root.test"))
+            print("mkdir " + os.path.join(self._data_dir, dataset_name, "data", "data", "unsequence", "root.test"))
+            os.system("mkdir " + os.path.join(self._data_dir, dataset_name, "data", "data", "unsequence", "root.test"))
+            print("mv " + os.path.join(self._data_dir, dataset_name, "data", "data", "unsequence", "0") + " " + os.path.join(
+                self._data_dir, dataset_name, "data", "data", "unsequence", "root.test"))
+            os.system("mv " + os.path.join(self._data_dir, dataset_name, "data", "data", "unsequence", "0") + " " + os.path.join(
+                self._data_dir, dataset_name, "data", "data", "unsequence", "root.test"))
 
 
 if __name__ == '__main__':
