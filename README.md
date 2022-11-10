@@ -22,3 +22,6 @@ bash ./benchmark/run-benchmark.sh [-r REPOSITORY_URL] [-b BRANCH_NAME] [-c COMMI
 
 The script will automatically set up the environment, compile the IoTDB, download the dataset and run the test.
 Notice, **THE SCRIPT CAN ONLY BE RAN IN UBUNTU**. The test result will be store in a txt file named "result.txt".
+
+# Dataset
+Currently, this benchmark contains 16 scenario.
