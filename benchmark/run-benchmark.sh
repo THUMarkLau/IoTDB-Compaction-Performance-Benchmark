@@ -66,15 +66,22 @@ wait_unseq_clear() {
   while [ $cross_file_num -eq 0 ]; do
     if [ "${VERSION}" == "NEW" ] || [ "${VERSION}" == "new" ]; then
       cross_file_num=$(find data/datanode/data/sequence -name "*.cross" | wc -l)
+    elif [ "${VERSION}" == "0.13" ]; then
+      cross_file_num=$(find data/data/sequence -name "*.cross" | wc -l)
     else
       cross_file_num=$(find data/data/sequence -name "*.merge" | wc -l)
     fi
+    echo the num of merge file is $cross_file_num
     sleep 1s
   done
 
   echo Compaction starts
 
-  unseq_num=$(find data/datanode/data/unsequence -name "*.tsfile" | wc -l)
+  if [ "${VERSION}" == "NEW" ] || [ "${VERSION}" == "new" ]; then
+      unseq_num=$(find data/datanode/data/unsequence -name "*.tsfile" | wc -l)
+    else
+      unseq_num=$(find data/data/unsequence -name "*.tsfile" | wc -l)
+    fi
   echo "$unseq_num"
   start_time=$(date +"%Y-%m-%d %H:%M:%S")
 
@@ -82,12 +89,18 @@ wait_unseq_clear() {
     # shellcheck disable=SC2038
     if [ "${VERSION}" == "NEW" ] || [ "${VERSION}" == "new" ]; then
       unseq_file_size=$(find . -name "*.cross" | xargs du -ch | tail -n 1 | cut -d " " -f1)
+    elif [ "${VERSION}" == "0.13" ]; then
+      unseq_file_size=$(find . -name "*.cross" | xargs du -ch | tail -n 1 | cut -d " " -f1)
     else
       unseq_file_size=$(find . -name "*.merge" | xargs du -ch | tail -n 1 | cut -d " " -f1)
     fi
     echo The size of cross-temp files, "$unseq_file_size"
     sleep 1s
-    unseq_num=$(find data/datanode/data/unsequence -name "*.tsfile" | wc -l)
+    if [ "${VERSION}" == "NEW" ] || [ "${VERSION}" == "new" ]; then
+      unseq_num=$(find data/datanode/data/unsequence -name "*.tsfile" | wc -l)
+    else
+      unseq_num=$(find data/data/unsequence -name "*.tsfile" | wc -l)
+    fi
   done
   end_time=$(date +"%Y-%m-%d %H:%M:%S")
   s1=$(date -d "$start_time" +%s)
@@ -101,6 +114,7 @@ clear_cache() {
 }
 
 test_one_dataset() {
+  date +"%Y-%m-%d %H:%M:%S" >> "test-result.txt"
   echo Testing "$1"
   echo Copying dataset $1
   # using hard link to accelerate copy
@@ -122,7 +136,11 @@ test_one_dataset() {
 
   clear_cache
 
+  if [ "${VERSION}" == "new" ] || [ "${VERSION}" == "NEW" ]; then
+    nohup bash sbin/start-new-server.sh > /dev/null 2>&1 &
+  else
   nohup bash sbin/start-server.sh >/dev/null 2>&1 &
+  fi
 
   wait_unseq_clear "$1"
 
@@ -195,6 +213,27 @@ set_iotdb_config() {
     sed -i s/#MAX_HEAP_SIZE=\"2G\"/MAX_HEAP_SIZE=\"30G\"/g test-server/conf/datanode-env.sh
     sed -i s/#HEAP_NEWSIZE=\"2G\"/HEAP_NEWSIZE=\"30G\"/g test-server/conf/datanode-env.sh
     echo "enable_memory_control=false" >> test-server/conf/iotdb-datanode.properties
+    echo "" >>test-server/conf/iotdb-common.properties
+    echo "enable_partition=false" >> test-server/conf/iotdb-common.properties
+    echo "sync_mlog_permiod_in_ms=10000000000" >> test-server/conf/iotdb-common.properties
+    echo "storage_engine_memory_proportion=1:9" >> test-server/conf/iotdb-datanode.properties
+    echo "chunk_metadata_memory_size_proportion=0.5" >> test-server/conf/iotdb-datanode.properties
+    echo "concurrent_compaction_thread_num=1" >> test-server/conf/iotdb-datanode.properties
+  elif [ "${VERSION}" == "0.13" ]; then
+    echo " " >> test-server/conf/iotdb-engine.properties
+    sed -i s/#MAX_HEAP_SIZE=\"2G\"/MAX_HEAP_SIZE=\"30G\"/g test-server/conf/iotdb-env.sh
+    sed -i s/#HEAP_NEWSIZE=\"2G\"/HEAP_NEWSIZE=\"30G\"/g test-server/conf/iotdb-env.sh
+    echo "compaction_write_throughput_mb_per_sec=1024" >>test-server/conf/iotdb-engine.properties
+    echo "write_read_schema_free_memory_proportion=7:1:1:1:0" >>test-server/conf/iotdb-engine.properties
+    echo "cross_compaction_file_selection_time_budget=300000" >>test-server/conf/iotdb-engine.properties
+    echo "enable_memory_control=false" >> test-server/conf/iotdb-engine.properties
+    echo "enable_seq_space_compaction=false" >>test-server/conf/iotdb-engine.properties
+    echo "enable_unseq_space_compaction=false" >>test-server/conf/iotdb-engine.properties
+    echo "max_cross_compaction_candidate_file_size=53687091200" >>test-server/conf/iotdb-engine.properties
+    echo "enable_memory_control=false" >> test-server/conf/iotdb-engine.properties
+    echo "storage_engine_memory_proportion=1:9" >> test-server/conf/iotdb-engine.properties
+    echo "chunk_metadata_memory_size_proportion=0.5" >> test-server/conf/iotdb-engine.properties
+    echo "concurrent_compaction_thread_num=1" >> test-server/conf/iotdb-engine.properties
   else
     echo " " >> test-server/conf/iotdb-engine.properties
     sed -i s/#MAX_HEAP_SIZE=\"2G\"/MAX_HEAP_SIZE=\"30G\"/g test-server/conf/iotdb-env.sh
@@ -207,12 +246,11 @@ set_iotdb_config() {
 download_dataset() {
   echo Downloading dataset $1
   # shellcheck disable=SC2164
-  python3 ./test_data_manager.py test-data "non_chunk_overlap_1G" "${SKIP_MD5}"
+  python3 ./test_data_manager.py test-data all "${SKIP_MD5}"
 }
 
 test_all() {
   commit=$(git log -1 --pretty=format:%H)
-  date +"%Y-%m-%d %H:%M:%S" >> "test-result.txt"
   echo repository: ${REPOSITORY} >>"test-result.txt"
   echo branch: ${BRANCH} >>"test-result.txt"
   echo commit: ${commit} >>"test-result.txt"
@@ -225,13 +263,13 @@ test_all() {
 #  test_one_dataset "massive_page_overlap"
 #  test_one_dataset "massive_page_overlap_aligned"
   test_one_dataset "non_chunk_overlap_1G"
-#  test_one_dataset "non_chunk_overlap_2G"
-#  test_one_dataset "non_chunk_overlap_3G"
-#  test_one_dataset "non_chunk_overlap_4G"
-#  test_one_dataset "non_chunk_overlap_1seq_9unseq"
-#  test_one_dataset "non_chunk_overlap_3seq_7unseq"
-#  test_one_dataset "non_chunk_overlap_7seq_3unseq"
-#  test_one_dataset "non_chunk_overlap_9seq_1unseq"
+  test_one_dataset "non_chunk_overlap_2G"
+  test_one_dataset "non_chunk_overlap_3G"
+  test_one_dataset "non_chunk_overlap_4G"
+  test_one_dataset "non_chunk_overlap_1seq_9unseq"
+  test_one_dataset "non_chunk_overlap_3seq_7unseq"
+  test_one_dataset "non_chunk_overlap_7seq_3unseq"
+  test_one_dataset "non_chunk_overlap_9seq_1unseq"
 }
 
 echo repository is "${REPOSITORY}"
@@ -261,7 +299,7 @@ else
   date +"%Y-%m-%d %H:%M:%S" >> "test-result.txt"
   echo repository: ${REPOSITORY} >>"test-result.txt"
   echo branch: ${BRANCH} >>"test-result.txt"
-  echo commit: ${commit} >>"test-result.txt"
+  echo commit: $commit >>"test-result.txt"
   test_one_dataset "${DATASET}"
 fi
 

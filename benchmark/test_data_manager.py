@@ -10,20 +10,20 @@ Logger.set_level("INFO")
 SKIP_MK5 = True
 
 URLS = {
-    "non_file_overlap": ["https://cloud.tsinghua.edu.cn/f/b08a9c7915944ff08a18/?dl=1"],
-    "non_file_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/8484c06f42fe4785bf54/?dl=1"],
-    "non_chunk_overlap": ["https://cloud.tsinghua.edu.cn/f/79f947090da749c78254/?dl=1"],
-    "non_chunk_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/3f627e0393fd47caab3a/?dl=1"],
-    "multi_page_overlap": ["https://cloud.tsinghua.edu.cn/f/730e04e2661546d19178/?dl=1"],
-    "multi_page_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/e82d3e1b6883452eb6f2/?dl=1"],
-    "massive_page_overlap": ["https://cloud.tsinghua.edu.cn/f/f43271c0a2164ac49b7e/?dl=1"],
-    "massive_page_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/33f130acae8d4fe1bf1a/?dl=1"],
-    "non_chunk_overlap_1G": ["https://cloud.tsinghua.edu.cn/f/87a545a852644d1695d4/?dl=1"],
-    "non_chunk_overlap_2G": ["https://cloud.tsinghua.edu.cn/f/28f9c42f5fae4397b568/?dl=1"],
-    "non_chunk_overlap_3G": ["https://cloud.tsinghua.edu.cn/f/aa60778332d74674bd91/?dl=1",
-                             "https://cloud.tsinghua.edu.cn/f/bfa5e6bba89849a6bee6/?dl=1"],
-    "non_chunk_overlap_4G": ["https://cloud.tsinghua.edu.cn/f/abc0fd96aff042fabc0b/?dl=1",
-                             "https://cloud.tsinghua.edu.cn/f/8156f07c03ab4051b338/?dl=1"],
+    # "non_file_overlap": ["https://cloud.tsinghua.edu.cn/f/b08a9c7915944ff08a18/?dl=1"],
+    # "non_file_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/8484c06f42fe4785bf54/?dl=1"],
+    # "non_chunk_overlap": ["https://cloud.tsinghua.edu.cn/f/79f947090da749c78254/?dl=1"],
+    # "non_chunk_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/3f627e0393fd47caab3a/?dl=1"],
+    # "multi_page_overlap": ["https://cloud.tsinghua.edu.cn/f/730e04e2661546d19178/?dl=1"],
+    # "multi_page_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/e82d3e1b6883452eb6f2/?dl=1"],
+    # "massive_page_overlap": ["https://cloud.tsinghua.edu.cn/f/f43271c0a2164ac49b7e/?dl=1"],
+    # "massive_page_overlap_aligned": ["https://cloud.tsinghua.edu.cn/f/33f130acae8d4fe1bf1a/?dl=1"],
+    "non_chunk_overlap_1G": ["https://cloud.tsinghua.edu.cn/f/592813e35d94412690a3/?dl=1"],
+    "non_chunk_overlap_2G": ["https://cloud.tsinghua.edu.cn/f/0eba3799311a4786a697/?dl=1"],
+    "non_chunk_overlap_3G": ["https://cloud.tsinghua.edu.cn/f/8fa6f4f6195d45a48ea1/?dl=1",
+                             "https://cloud.tsinghua.edu.cn/f/050cb5c4668e40d389d5/?dl=1"],
+    "non_chunk_overlap_4G": ["https://cloud.tsinghua.edu.cn/f/3278c03ce41740579b87/?dl=1",
+                             "https://cloud.tsinghua.edu.cn/f/5cbf109c602e4ad8ade8/?dl=1"],
     "non_chunk_overlap_1seq_9unseq": ["https://cloud.tsinghua.edu.cn/f/1af3aaf69ffb433e9123/?dl=1",
                                       "https://cloud.tsinghua.edu.cn/f/761cba4b3c38403dbede/?dl=1",
                                       "https://cloud.tsinghua.edu.cn/f/816fc6a236ec4d1a8d51/?dl=1"],
@@ -70,10 +70,10 @@ FILE_NAMES = {
     "multi_page_overlap_aligned": ["multi_page_overlap_aligned.7z"],
     "massive_page_overlap": ["massive_page_overlap.7z"],
     "massive_page_overlap_aligned": ["massive_page_overlap_aligned.7z"],
-    "non_chunk_overlap_1G": ["non_chunk_overlap_1G.7z"],
+    "non_chunk_overlap_1G": ["non_chunk_overlap_1G.7z.001"],
     "non_chunk_overlap_2G": ["non_chunk_overlap_2G.7z"],
-    "non_chunk_overlap_3G": ["non_chunk_overlap_3GB.7z.001", "non_chunk_overlap_3GB.7z.002"],
-    "non_chunk_overlap_4G": ["non_chunk_overlap_4GB.7z.001", "non_chunk_overlap_4GB.7z.002"],
+    "non_chunk_overlap_3G": ["non_chunk_overlap_3G.7z.001", "non_chunk_overlap_3G.7z.002"],
+    "non_chunk_overlap_4G": ["non_chunk_overlap_4G.7z.001", "non_chunk_overlap_4G.7z.002"],
     "non_chunk_overlap_1seq_9unseq": ["non_chunk_overlap_1seq_9unseq.7z.001", "non_chunk_overlap_1seq_9unseq.7z.002",
                                       "non_chunk_overlap_1seq_9unseq.7z.003"],
     "non_chunk_overlap_3seq_7unseq": ["non_chunk_overlap_3seq_7unseq.7z.001", "non_chunk_overlap_3seq_7unseq.7z.002",
@@ -108,56 +108,56 @@ class TestDataManager:
             self._log.error("Cannot find " + dataset_name + " in " + str(URLS.keys()) + ", failed to download")
 
     def _download_one_data_set(self, dataset_name, urls, names):
-        if os.path.exists(os.path.join(self._data_dir, names[0])):
-            if not SKIP_MK5:
-                md5_right = MD5_SUM[dataset_name]
-                for idx, name in enumerate(names):
-                    md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name))
-                    md5_sum = md5_check.read().split(" ")[0]
-                    if md5_sum != md5_right[idx]:
-                        return False
-            return True
 
-        md5_right = MD5_SUM[dataset_name]
+        # md5_right = MD5_SUM[dataset_name]
         for idx, url in enumerate(urls):
-            with get(url, stream=True) as r:
-                file_size = 0
-                if r.headers.get('Content-Length'):
-                    file_size = int(r.headers.get('Content-Length'))
-                    b = file_size / 1024 / 1024
-                    self._log.info("ResourceSize: " + str(b) + " MB")
-                else:
-                    self._log.info("ResourceSize: 0 MB")
+            while True:
+                try:
+                    if os.path.exists(os.path.join(self._data_dir, names[idx])):
+                        break
+                    with get(url, stream=True) as r:
+                        file_size = 0
+                        if r.headers.get('Content-Length'):
+                            file_size = int(r.headers.get('Content-Length'))
+                            b = file_size / 1024 / 1024
+                            self._log.info("ResourceSize: " + str(b) + " MB")
+                        else:
+                            self._log.info("ResourceSize: 0 MB")
 
-                chunk_size = 2048
+                        chunk_size = 2048
 
-                self._log.info("Downloading " + os.path.join(self._data_dir, names[idx]))
-                a = time()
-                total_size = 0
-                chunk_num = 0
-                with open(os.path.join(self._data_dir, names[idx]), "wb") as code:
-                    for chunk in r.iter_content(chunk_size=chunk_size):
-                        code.write(chunk)
-                        code.flush()
-                        total_size += len(chunk)
-                        chunk_num += 1
-                        if chunk_num % 1000 == 0:
-                            self._log.info("Downloading " + names[idx] + " %.2f MB/ %.2fMB %.2f %% " % (
-                                total_size / 1024 / 1024, file_size / 1024 / 1024, total_size / file_size * 100.0))
-                    code.close()
-                a = time() - a
-                if a != 0:
-                    self._log.info("Write Speed" + str(floor((b / a) * 100) / 100) + " MB/s")
-                else:
-                    self._log.info("Write Speed：0 MB/s")
-
-        if not SKIP_MK5:
-            for idx, name in enumerate(names):
-                md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name))
-                md5_sum = md5_check.read().split(" ")[0]
-                if md5_sum != md5_right[idx]:
-                    self._log.error("Wanted md5: " + md5_right + ", but get md5: " + md5_sum)
-                    return False
+                        self._log.info("Downloading " + os.path.join(self._data_dir, names[idx]))
+                        a = time()
+                        total_size = 0
+                        chunk_num = 0
+                        with open(os.path.join(self._data_dir, names[idx]), "wb") as code:
+                            for chunk in r.iter_content(chunk_size=chunk_size):
+                                code.write(chunk)
+                                code.flush()
+                                total_size += len(chunk)
+                                chunk_num += 1
+                                if chunk_num % 1000 == 0:
+                                    self._log.info(
+                                        "Downloading " + names[idx] + " %.2f MB/ %.2fMB %.2f %% %d seconds remaining" % (
+                                            total_size / 1024 / 1024, file_size / 1024 / 1024, total_size / file_size * 100.0,
+                                            (time() - a) / (total_size / file_size) * (1 - total_size / file_size)))
+                            code.close()
+                        a = time() - a
+                        if a != 0:
+                            self._log.info("Write Speed" + str(floor((b / a) * 100) / 100) + " MB/s")
+                        else:
+                            self._log.info("Write Speed：0 MB/s")
+                            break
+                except Exception as e:
+                    os.system("rm " + os.path.join(self._data_dir, names[idx]))
+        #
+        # if not SKIP_MK5:
+        #     for idx, name in enumerate(names):
+        #         md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name))
+        #         md5_sum = md5_check.read().split(" ")[0]
+        #         if md5_sum != md5_right[idx]:
+        #             self._log.error("Wanted md5: " + md5_right + ", but get md5: " + md5_sum)
+        #             return False
         return True
 
     def unzip(self, name="all"):
@@ -178,23 +178,11 @@ class TestDataManager:
         os.system(
             "7z x " + os.path.join(self._data_dir, file_names[0]) + " -r -o" + os.path.join(self._data_dir,
                                                                                             dataset_name))
-        if dataset_name not in GOOD_DATASET:
-            dir_name = os.popen("ls " + os.path.join(self._data_dir, dataset_name)).read().split("\n")[0]
-            os.system("mv " + os.path.join(self._data_dir, dataset_name, dir_name) + " " + os.path.join(self._data_dir,
-                                                                                                        dataset_name,
-                                                                                                        "data"))
-            print("mkdir " + os.path.join(self._data_dir, dataset_name, "data", "data", "sequence", "root.test"))
-            os.system("mkdir " + os.path.join(self._data_dir, dataset_name, "data", "data", "sequence", "root.test"))
-            print("mv " + os.path.join(self._data_dir, dataset_name, "data", "data", "sequence", "0") + " " + os.path.join(
-                self._data_dir, dataset_name, "data", "data", "sequence", "root.test"))
-            os.system("mv " + os.path.join(self._data_dir, dataset_name, "data", "data", "sequence", "0") + " " + os.path.join(
-                self._data_dir, dataset_name, "data", "data", "sequence", "root.test"))
-            print("mkdir " + os.path.join(self._data_dir, dataset_name, "data", "data", "unsequence", "root.test"))
-            os.system("mkdir " + os.path.join(self._data_dir, dataset_name, "data", "data", "unsequence", "root.test"))
-            print("mv " + os.path.join(self._data_dir, dataset_name, "data", "data", "unsequence", "0") + " " + os.path.join(
-                self._data_dir, dataset_name, "data", "data", "unsequence", "root.test"))
-            os.system("mv " + os.path.join(self._data_dir, dataset_name, "data", "data", "unsequence", "0") + " " + os.path.join(
-                self._data_dir, dataset_name, "data", "data", "unsequence", "root.test"))
+        # if dataset_name not in GOOD_DATASET:
+        #     dir_name = os.popen("ls " + os.path.join(self._data_dir, dataset_name)).read().split("\n")[0]
+        #     os.system("mv " + os.path.join(self._data_dir, dataset_name, dir_name) + " " + os.path.join(self._data_dir,
+        #                                                                                                 dataset_name,
+        #                                                                                                 "data"))
 
 
 if __name__ == '__main__':
