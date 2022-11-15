@@ -183,7 +183,9 @@ clone_and_compile_iotdb() {
   # shellcheck disable=SC2086
   git reset --hard ${COMMIT} || exit
 
-  mvn clean package -pl server -am -DskipTests -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dxml-format.skip=true || exit
+  while [ ! -e "server/target" ]; do
+  mvn clean package -pl server -am -DskipTests -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dxml-format.skip=true
+  done
 
   cd ..
 }
@@ -203,22 +205,22 @@ set_iotdb_config() {
   # shellcheck disable=SC2129
   if [ "${VERSION}" == "new" ] || [ "${VERSION}" == "NEW" ]; then
     echo " " >> test-server/conf/iotdb-datanode.properties
-    echo "enable_seq_space_compaction=false" >>test-server/conf/iotdb-datanode.properties
-    echo "enable_unseq_space_compaction=false" >>test-server/conf/iotdb-datanode.properties
-    echo "max_cross_compaction_candidate_file_size=53687091200" >>test-server/conf/iotdb-datanode.properties
+    echo "" >>test-server/conf/iotdb-common.properties
+    echo "enable_seq_space_compaction=false" >>test-server/conf/iotdb-common.properties
+    echo "enable_unseq_space_compaction=false" >>test-server/conf/iotdb-common.properties
+    echo "max_cross_compaction_candidate_file_size=53687091200" >>test-server/conf/iotdb-common.properties
     # do not limit the write speed
-    echo "compaction_write_throughput_mb_per_sec=1024" >>test-server/conf/iotdb-datanode.properties
-    echo "write_read_schema_free_memory_proportion=7:1:1:1:0" >>test-server/conf/iotdb-datanode.properties
-    echo "cross_compaction_file_selection_time_budget=300000" >>test-server/conf/iotdb-datanode.properties
+    echo "compaction_write_throughput_mb_per_sec=1024" >>test-server/conf/iotdb-common.properties
+    echo "cross_compaction_file_selection_time_budget=300000" >>test-server/conf/iotdb-common.properties
     sed -i s/#MAX_HEAP_SIZE=\"2G\"/MAX_HEAP_SIZE=\"30G\"/g test-server/conf/datanode-env.sh
     sed -i s/#HEAP_NEWSIZE=\"2G\"/HEAP_NEWSIZE=\"30G\"/g test-server/conf/datanode-env.sh
-    echo "enable_memory_control=false" >> test-server/conf/iotdb-datanode.properties
-    echo "" >>test-server/conf/iotdb-common.properties
+    echo "enable_mem_control=false" >> test-server/conf/iotdb-common.properties
     echo "enable_partition=false" >> test-server/conf/iotdb-common.properties
-    echo "sync_mlog_permiod_in_ms=10000000000" >> test-server/conf/iotdb-common.properties
-    echo "storage_engine_memory_proportion=1:9" >> test-server/conf/iotdb-datanode.properties
-    echo "chunk_metadata_memory_size_proportion=0.5" >> test-server/conf/iotdb-datanode.properties
-    echo "concurrent_compaction_thread_num=1" >> test-server/conf/iotdb-datanode.properties
+    echo "sync_mlog_period_in_ms=10000000000" >> test-server/conf/iotdb-common.properties
+    echo "storage_query_schema_consensus_free_memory_proportion=7:1:1:1:0:0" >>test-server/conf/iotdb-common.properties
+    echo "storage_engine_memory_proportion=1:9" >> test-server/conf/iotdb-common.properties
+    echo "chunk_metadata_size_proportion=0.5" >> test-server/conf/iotdb-common.properties
+    echo "compaction_thread_count=1" >> test-server/conf/iotdb-common.properties
   elif [ "${VERSION}" == "0.13" ]; then
     echo " " >> test-server/conf/iotdb-engine.properties
     sed -i s/#MAX_HEAP_SIZE=\"2G\"/MAX_HEAP_SIZE=\"30G\"/g test-server/conf/iotdb-env.sh
