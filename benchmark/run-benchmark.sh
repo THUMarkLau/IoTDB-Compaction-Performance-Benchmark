@@ -225,7 +225,7 @@ set_iotdb_config() {
     echo "enable_mem_control=false" >> test-server/conf/iotdb-common.properties
     echo "enable_partition=false" >> test-server/conf/iotdb-common.properties
     echo "sync_mlog_period_in_ms=10000000000" >> test-server/conf/iotdb-common.properties
-    echo "storage_query_schema_consensus_free_memory_proportion=7:1:1:1:0:0" >>test-server/conf/iotdb-common.properties
+    echo "write_read_schema_free_memory_proportion=7:1:1:1:0:0" >>test-server/conf/iotdb-common.properties
     echo "storage_engine_memory_proportion=1:9" >> test-server/conf/iotdb-common.properties
     echo "chunk_metadata_size_proportion=0.5" >> test-server/conf/iotdb-common.properties
     echo "compaction_thread_count=1" >> test-server/conf/iotdb-common.properties
@@ -240,10 +240,10 @@ set_iotdb_config() {
     echo "enable_seq_space_compaction=false" >>test-server/conf/iotdb-engine.properties
     echo "enable_unseq_space_compaction=false" >>test-server/conf/iotdb-engine.properties
     echo "max_cross_compaction_candidate_file_size=53687091200" >>test-server/conf/iotdb-engine.properties
-    echo "enable_memory_control=false" >> test-server/conf/iotdb-engine.properties
+    echo "enable_mem_control=false" >> test-server/conf/iotdb-engine.properties
     echo "storage_engine_memory_proportion=1:9" >> test-server/conf/iotdb-engine.properties
     echo "chunk_metadata_memory_size_proportion=0.5" >> test-server/conf/iotdb-engine.properties
-    echo "concurrent_compaction_thread_num=1" >> test-server/conf/iotdb-engine.properties
+    echo "concurrent_compaction_thread=1" >> test-server/conf/iotdb-engine.properties
   else
     echo " " >> test-server/conf/iotdb-engine.properties
     sed -i s/#MAX_HEAP_SIZE=\"2G\"/MAX_HEAP_SIZE=\"30G\"/g test-server/conf/iotdb-env.sh
