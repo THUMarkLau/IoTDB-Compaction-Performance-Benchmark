@@ -1,3 +1,5 @@
 .idea/*
 data/*
 test-data-generation/target/*
+test-data-generation/.idea/*
+test-data-generation/data/*

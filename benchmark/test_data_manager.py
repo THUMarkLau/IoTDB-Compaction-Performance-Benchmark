@@ -1,10 +1,8 @@
 import os
 import sys
-from math import floor
-from time import time
 
-from requests import get
 from log4py import Logger
+from requests import get
 
 Logger.set_level("INFO")
 SKIP_MK5 = True
@@ -47,18 +45,18 @@ MD5_SUM = {
     "multi_page_overlap_aligned": ["7fd7d9ea568ba26fae7f24e4c0c7e59c"],
     "massive_page_overlap": ["873c7ca87891a14c438048c51f4564a8"],
     "massive_page_overlap_aligned": ["2b95f2bd41e2e3c66e9478b5e5fe5888"],
-    "non_chunk_overlap_1G": ["edbba822a37c126be3f276ac3d6ff9c0"],
-    "non_chunk_overlap_2G": ["22f89c74c0c82eb00bff32c03e7749c3"],
-    "non_chunk_overlap_3G": ["b08afaa19890cf459ed727864d9c3e7b", "60c0663ea672c42c031e70c4ee078b43"],
-    "non_chunk_overlap_4G": ["83eed4b42d1ed35992111ad8999888c1", "a8052b9205e77164e68ec699ff3fabcd"],
-    "non_chunk_overlap_9seq_1unseq": ["24b5893a103bca1b31147b5d56015e7b", "12640c92a6721c6864c6824502819581",
-                                      "9fe8f7d89ab4ad6c142330d5e381136b"],
-    "non_chunk_overlap_7seq_3unseq": ["6e03ec167d5c810c6c00baf6afe5e3eb", "417ddd11a6efac83c290e2fad4403182",
-                                      "1716785c34dd616ca50962daa6910e83"],
-    "non_chunk_overlap_3seq_7unseq": ["12cf542955f08925920c54591241f7dd", "152c5d2d7d06d28c760959fd3041ea41",
-                                      "3d74c76ac8ba349af12c3f3811b53269"],
-    "non_chunk_overlap_1seq_9unseq": ["88d5a62e146cbc7001d9812176dfd6b7", "5662161b5c45c546dc10bf4b8128f2bd",
-                                      "378bf4d46392c1b8a50d208d176e7659"]
+    "non_chunk_overlap_1G": ["6bf028528f837877aa0afd191987a830"],
+    "non_chunk_overlap_2G": ["937d27f4727fae2fa8d72f5311208357"],
+    "non_chunk_overlap_3G": ["61af6fd3c41f9827d7e2bf4eb8d27756", "2cf0198316ea4a70d12ec00f8445c686"],
+    "non_chunk_overlap_4G": ["925d81afe50973b532c965f60b608d69", "e61ee5e49242cfe001da60780fe6966f"],
+    "non_chunk_overlap_9seq_1unseq": ["5e4d8ef7f6d7264ec86e8b9d17e9bd7d", "7abffff0292c75ad52eef52da21f8a8b",
+                                      "7181266ee46f0897d7c28c1ab236feb6"],
+    "non_chunk_overlap_7seq_3unseq": ["650399f2d87c958f7914c239d1c6f069", "e3c20b28f05983fcd646e636ce8a120f",
+                                      "e76c4168834147832bbca4260be897ed"],
+    "non_chunk_overlap_3seq_7unseq": ["21287e76ef1228b482aac5a5bf59a6af", "470e602b6087df0741b7bbfd93b2ff41",
+                                      "ac5f531a7fb8d81ffd80527b63cae4c1"],
+    "non_chunk_overlap_1seq_9unseq": ["2ab754ca473af1d32b4923b522ddfc1e", "dcbad10220dd05abce0293f61086798b",
+                                      "e34f5a5a1b309a68a22108cbc1cc459b"]
 }
 
 FILE_NAMES = {
@@ -71,7 +69,7 @@ FILE_NAMES = {
     "massive_page_overlap": ["massive_page_overlap.7z"],
     "massive_page_overlap_aligned": ["massive_page_overlap_aligned.7z"],
     "non_chunk_overlap_1G": ["non_chunk_overlap_1G.7z.001"],
-    "non_chunk_overlap_2G": ["non_chunk_overlap_2G.7z"],
+    "non_chunk_overlap_2G": ["non_chunk_overlap_2G.7z.001"],
     "non_chunk_overlap_3G": ["non_chunk_overlap_3G.7z.001", "non_chunk_overlap_3G.7z.002"],
     "non_chunk_overlap_4G": ["non_chunk_overlap_4G.7z.001", "non_chunk_overlap_4G.7z.002"],
     "non_chunk_overlap_1seq_9unseq": ["non_chunk_overlap_1seq_9unseq.7z.001", "non_chunk_overlap_1seq_9unseq.7z.002",
@@ -109,55 +107,34 @@ class TestDataManager:
 
     def _download_one_data_set(self, dataset_name, urls, names):
 
-        # md5_right = MD5_SUM[dataset_name]
+        md5_right = MD5_SUM[dataset_name]
         for idx, url in enumerate(urls):
             while True:
                 try:
                     if os.path.exists(os.path.join(self._data_dir, names[idx])):
-                        break
-                    with get(url, stream=True) as r:
-                        file_size = 0
-                        if r.headers.get('Content-Length'):
-                            file_size = int(r.headers.get('Content-Length'))
-                            b = file_size / 1024 / 1024
-                            self._log.info("ResourceSize: " + str(b) + " MB")
-                        else:
-                            self._log.info("ResourceSize: 0 MB")
-
-                        chunk_size = 2048
-
-                        self._log.info("Downloading " + os.path.join(self._data_dir, names[idx]))
-                        a = time()
-                        total_size = 0
-                        chunk_num = 0
-                        with open(os.path.join(self._data_dir, names[idx]), "wb") as code:
-                            for chunk in r.iter_content(chunk_size=chunk_size):
-                                code.write(chunk)
-                                code.flush()
-                                total_size += len(chunk)
-                                chunk_num += 1
-                                if chunk_num % 1000 == 0:
-                                    self._log.info(
-                                        "Downloading " + names[idx] + " %.2f MB/ %.2fMB %.2f %% %d seconds remaining" % (
-                                            total_size / 1024 / 1024, file_size / 1024 / 1024, total_size / file_size * 100.0,
-                                            (time() - a) / (total_size / file_size) * (1 - total_size / file_size)))
-                            code.close()
-                        a = time() - a
-                        if a != 0:
-                            self._log.info("Write Speed" + str(floor((b / a) * 100) / 100) + " MB/s")
-                        else:
-                            self._log.info("Write Speed：0 MB/s")
+                        md5_check = os.popen("md5sum " + os.path.join(self._data_dir, names[idx]))
+                        md5_sum = md5_check.read().split(" ")[0]
+                        if md5_sum == md5_right[idx]:
+                            self._log.info(os.path.join(self._data_dir, names[idx]) + "exists and md5 is right, skip "
+                                                                                      "it")
                             break
+                        else:
+                            self._log.info(os.path.join(self._data_dir, names[idx]) + "exists but md5 is wrong, delete "
+                                                                                      "it and download again")
+                            os.system("rm " + os.path.join(self._data_dir, names[idx]))
+                    with get(url, stream=True) as r:
+                        os.system("wget " + url + " -O " + os.path.join(self._data_dir, names[idx]))
+                        md5_check = os.popen("md5sum " + os.path.join(self._data_dir, names[idx]))
+                        md5_sum = md5_check.read().split(" ")[0]
+                        if md5_sum == md5_right[idx]:
+                            break
+                        else:
+                            self._log.error(
+                                "Expect md5 for " + os.path.join(self._data_dir, names[idx]) + " is " + md5_right[
+                                    idx] + ", but get " + md5_sum + ". Remove it and re-download again")
+                            os.system("rm " + os.path.join(self._data_dir, names[idx]))
                 except Exception as e:
                     os.system("rm " + os.path.join(self._data_dir, names[idx]))
-        #
-        # if not SKIP_MK5:
-        #     for idx, name in enumerate(names):
-        #         md5_check = os.popen("md5sum " + os.path.join(self._data_dir, name))
-        #         md5_sum = md5_check.read().split(" ")[0]
-        #         if md5_sum != md5_right[idx]:
-        #             self._log.error("Wanted md5: " + md5_right + ", but get md5: " + md5_sum)
-        #             return False
         return True
 
     def unzip(self, name="all"):
@@ -178,11 +155,6 @@ class TestDataManager:
         os.system(
             "7z x " + os.path.join(self._data_dir, file_names[0]) + " -r -o" + os.path.join(self._data_dir,
                                                                                             dataset_name))
-        # if dataset_name not in GOOD_DATASET:
-        #     dir_name = os.popen("ls " + os.path.join(self._data_dir, dataset_name)).read().split("\n")[0]
-        #     os.system("mv " + os.path.join(self._data_dir, dataset_name, dir_name) + " " + os.path.join(self._data_dir,
-        #                                                                                                 dataset_name,
-        #                                                                                                 "data"))
 
 
 if __name__ == '__main__':
