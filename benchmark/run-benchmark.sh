@@ -121,9 +121,17 @@ test_one_dataset() {
   if [ "${VERSION}" == "NEW" ] || [ "${VERSION}" == "new" ]; then
     mkdir -p test-server/data/datanode
     cp -r -v --link test-data/"$1"/data/* test-server/data/datanode/
+    mkdir -p test-server/data/datanode/data/sequence/root.test
+    mkdir -p test-server/data/datanode/data/unsequence/root.test
+    mv test-server/data/datanode/data/sequence/0 test-server/data/datanode/data/sequence/root.test
+    mv test-server/data/datanode/data/unsequence/0 test-server/data/datanode/data/unsequence/root.test
   else
     mkdir -p test-server/data
     cp -r -v --link test-data/"$1"/data/* test-server/data/
+    mkdir -p test-server/data/data/sequence/root.test
+    mkdir -p test-server/data/data/unsequence/root.test
+    mv test-server/data/data/sequence/0 test-server/data/data/sequence/root.test
+    mv test-server/data/data/unsequence/0 test-server/data/data/unsequence/root.test
   fi
 
   echo Finish copying

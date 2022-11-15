@@ -19,12 +19,89 @@
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Main {
-  public static void main(String[] args) throws IOException {
+  private static long seqStart = 0;
+  private static long seqEnd = 0;
+  private static long unseqStart = 0;
+  private static long unseqEnd = 0;
+
+  public static void main(String[] args) throws IOException, InterruptedException {
     Args.parseArgs(args);
     writeSeqFile();
     writeUnseqFile();
+//    if (args[0].equals("0")) {
+//      testReadingConcurrently(true);
+//    } else {
+//      testReading();
+//    }
+  }
+
+  private static void testReading() throws IOException {
+    try (FileChannel channel = FileChannel.open(Paths.get("/dev/sda"), StandardOpenOption.READ)) {
+      long size = 2000398934016L;
+      Random random = new Random();
+      int readSize = 1024 * 1024;
+      ByteBuffer buffer = ByteBuffer.allocate(readSize);
+      long timeCost = 0;
+      for (int i = 0; i < 2560; i++) {
+        buffer.clear();
+        long offset = Math.abs(random.nextLong() % (size - readSize));
+        int currSize = 0;
+        channel.position(offset);
+        long startTime = System.nanoTime();
+        while (currSize < readSize) {
+          currSize += channel.read(buffer);
+        }
+        timeCost += System.nanoTime() - startTime;
+      }
+      System.out.println("TimeCost for reading 2560MB in a single thread is " + timeCost + " ns");
+    }
+  }
+
+  private static void testReadingConcurrently(boolean sleep) throws IOException, InterruptedException {
+    Thread[] threads = new Thread[10];
+    AtomicLong timeCost = new AtomicLong(0L);
+    for (int t = 0; t < threads.length; ++t) {
+      threads[t] = new Thread(() -> {
+        try (FileChannel channel = FileChannel.open(Paths.get("/dev/sda"), StandardOpenOption.READ)) {
+          long size = 2000398934016L;
+          Random random = new Random();
+          int readSize = 1024 * 1024;
+          ByteBuffer buffer = ByteBuffer.allocate(readSize);
+          for (int i = 0; i < 256; i++) {
+            buffer.clear();
+            long offset = Math.abs(random.nextLong() % (size - readSize));
+            int currSize = 0;
+            channel.position(offset);
+            long startTime = System.nanoTime();
+            while (currSize < readSize) {
+              currSize += channel.read(buffer);
+            }
+            timeCost.addAndGet(System.nanoTime() - startTime);
+            if (sleep) {
+              Thread.sleep(random.nextInt(200));
+            }
+          }
+        } catch (IOException | InterruptedException e) {
+          e.printStackTrace();
+        }
+      });
+    }
+    long startTime = System.nanoTime();
+    for (Thread thread : threads) {
+      thread.start();
+    }
+    for (Thread thread : threads) {
+      thread.join();
+    }
+    System.out.println("TimeCost for reading 2560GB in 10 threads is " + timeCost.get() + " ns");
   }
 
   private static void writeSeqFile() throws IOException {
@@ -42,6 +119,8 @@ public class Main {
             Args.dataRootDir
                 + File.separator
                 + "sequence"
+                + File.separator
+                + Args.sgName
                 + File.separator
                 + "0"
                 + File.separator
@@ -61,9 +140,13 @@ public class Main {
       TsFileWriter writer = new TsFileWriter(file, sizeForEachSeqFile);
       writer.write(
           Args.chunkTimeAlternating
-              ? (long) fileIndex * (stepForSeq + stepForUnseq)
+              ? (long) fileIndex * (stepForSeq + stepForUnseq) + stepForUnseq
               : (long) Args.unseqFileNum * stepForUnseq + (long) fileIndex * stepForSeq,
           stepForSeq);
+      seqStart = Args.chunkTimeAlternating
+          ? (long) fileIndex * (stepForSeq + stepForUnseq) + stepForUnseq
+          : (long) Args.unseqFileNum * stepForUnseq + (long) fileIndex * stepForSeq;
+      seqEnd = seqStart + stepForSeq - 1;
     }
   }
 
@@ -81,6 +164,8 @@ public class Main {
                 + File.separator
                 + "unsequence"
                 + File.separator
+                + Args.sgName
+                + File.separator
                 + "0"
                 + File.separator
                 + "0");
@@ -91,19 +176,26 @@ public class Main {
       System.out.println("Cannot create directory " + dataDir.getAbsolutePath());
       System.exit(-1);
     }
-    for (int fileIndex = Args.seqFileNum;
-        fileIndex < Args.seqFileNum + Args.unseqFileNum;
-        ++fileIndex) {
+    for (int fileIndex = 0;
+         fileIndex < Args.unseqFileNum;
+         ++fileIndex) {
       File file =
           new File(
               dataDir,
-              String.format("%d-%d-0-0.tsfile", System.currentTimeMillis(), fileIndex + 1));
+              String.format("%d-%d-0-0.tsfile", System.currentTimeMillis(), fileIndex + 1 + Args.seqFileNum));
       TsFileWriter writer = new TsFileWriter(file, sizeForEachUnseqFile);
       writer.write(
           Args.chunkTimeAlternating
-              ? (long) fileIndex * (stepForSeq + stepForUnseq) + stepForSeq
+              ? (long) fileIndex * (stepForSeq + stepForUnseq)
               : (long) fileIndex * stepForUnseq,
           stepForUnseq);
+      unseqStart = Args.chunkTimeAlternating
+          ? (long) fileIndex * (stepForSeq + stepForUnseq)
+          : (long) fileIndex * stepForUnseq;
+      unseqEnd = stepForUnseq + unseqStart - 1;
+      if (unseqEnd >= seqStart) {
+        System.out.println("Error!!!, seqStart time is " + seqStart + " unseqEnd is " + unseqEnd);
+      }
     }
   }
 }
