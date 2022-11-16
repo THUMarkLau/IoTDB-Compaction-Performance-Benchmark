@@ -54,7 +54,7 @@ public class TsFileWriter {
                   new MeasurementSchema(
                       "s" + seriesIndex,
                       TSDataType.DOUBLE,
-                      TSEncoding.PLAIN,
+                      TSEncoding.RLE,
                       Args.enableCompression
                           ? CompressionType.SNAPPY
                           : CompressionType.UNCOMPRESSED));

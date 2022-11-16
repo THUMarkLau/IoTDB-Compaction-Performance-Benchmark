@@ -36,6 +36,7 @@ public class Args {
   public static double unseqFileSizeRatio = 0.5;
   public static boolean enableCompression = false;
   public static boolean chunkTimeAlternating = false;
+  public static boolean overlap = false;
 
   public static void parseArgs(String[] args) {
     Options options = buildOptions();
@@ -81,6 +82,9 @@ public class Args {
     }
     if (cli.hasOption("alter")) {
       chunkTimeAlternating = true;
+    }
+    if (cli.hasOption("overlap")) {
+      overlap = true;
     }
 
     System.out.println("********************************************");
@@ -151,6 +155,11 @@ public class Args {
         new Option("alter", "timeAlternate", false, "Chunk time alternating or not");
     optionForChunkTimeAlternating.setRequired(false);
     options.addOption(optionForChunkTimeAlternating);
+
+    Option optionForOverlap =
+        new Option("overlap", "data-overlapping", false, "Data overlapping or not");
+    optionForOverlap.setRequired(false);
+    options.addOption(optionForOverlap);
 
     return options;
   }
