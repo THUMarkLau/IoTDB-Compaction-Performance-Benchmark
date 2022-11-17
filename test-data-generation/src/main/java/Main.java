@@ -17,6 +17,8 @@
  * under the License.
  */
 
+import ch.qos.logback.classic.Level;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,6 +35,10 @@ public class Main {
   private static long unseqEnd = 0;
 
   public static void main(String[] args) throws IOException, InterruptedException {
+    ch.qos.logback.classic.Logger root =
+        (ch.qos.logback.classic.Logger)
+            org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+    root.setLevel(Level.INFO);
     Args.parseArgs(args);
     writeSeqFile();
     writeUnseqFile();
@@ -110,6 +116,7 @@ public class Main {
         (long) (Args.totalFileSize * Args.unseqFileSizeRatio / Args.unseqFileNum);
     // Because of the encoding of time, the size of timestamp can be nearly ignored
     // We estimate the size of time as 1 byte
+    System.out.println("Size for each seq file is " + sizeForEachSeqFile);
     int stepForUnseq =
         (int) Math.ceil(sizeForEachUnseqFile * 1.0d / Args.deviceNum / Args.seriesNum / 8.2);
     int stepForSeq =
@@ -132,21 +139,23 @@ public class Main {
       System.out.println("Cannot create directory " + dataDir.getAbsolutePath());
       System.exit(-1);
     }
+    System.out.println("point for seq " + stepForSeq);
     for (int fileIndex = 0; fileIndex < Args.seqFileNum; ++fileIndex) {
       File file =
           new File(
               dataDir,
               String.format("%d-%d-0-0.tsfile", System.currentTimeMillis(), fileIndex + 1));
       TsFileWriter writer = new TsFileWriter(file, sizeForEachSeqFile);
-      writer.write(
-          Args.chunkTimeAlternating
-              ? (long) fileIndex * (stepForSeq + stepForUnseq) + stepForUnseq
-              : (long) Args.unseqFileNum * stepForUnseq + (long) fileIndex * stepForSeq,
-          stepForSeq);
-      seqStart = Args.chunkTimeAlternating
-          ? (long) fileIndex * (stepForSeq + stepForUnseq) + stepForUnseq
-          : (long) Args.unseqFileNum * stepForUnseq + (long) fileIndex * stepForSeq;
-      seqEnd = seqStart + stepForSeq - 1;
+      System.out.println(stepForSeq);
+      if (Args.overlap) {
+        writer.write((long) fileIndex * stepForSeq, stepForSeq);
+      } else {
+        writer.write(
+            Args.chunkTimeAlternating
+                ? (long) fileIndex * (stepForSeq + stepForUnseq) + stepForUnseq
+                : (long) Args.unseqFileNum * stepForUnseq + (long) fileIndex * stepForSeq,
+            stepForSeq);
+      }
     }
   }
 
@@ -176,25 +185,33 @@ public class Main {
       System.out.println("Cannot create directory " + dataDir.getAbsolutePath());
       System.exit(-1);
     }
-    for (int fileIndex = 0;
-         fileIndex < Args.unseqFileNum;
-         ++fileIndex) {
-      File file =
-          new File(
-              dataDir,
-              String.format("%d-%d-0-0.tsfile", System.currentTimeMillis(), fileIndex + 1 + Args.seqFileNum));
-      TsFileWriter writer = new TsFileWriter(file, sizeForEachUnseqFile);
-      writer.write(
-          Args.chunkTimeAlternating
-              ? (long) fileIndex * (stepForSeq + stepForUnseq)
-              : (long) fileIndex * stepForUnseq,
-          stepForUnseq);
-      unseqStart = Args.chunkTimeAlternating
-          ? (long) fileIndex * (stepForSeq + stepForUnseq)
-          : (long) fileIndex * stepForUnseq;
-      unseqEnd = stepForUnseq + unseqStart - 1;
-      if (unseqEnd >= seqStart) {
-        System.out.println("Error!!!, seqStart time is " + seqStart + " unseqEnd is " + unseqEnd);
+    if (Args.overlap) {
+      int unseqFileNum =
+          (int) (Math.ceil(Args.seqFileNum * Args.unseqFileSizeRatio / Args.seqFileSizeRatio));
+      for (int fileIndex = 0; fileIndex < unseqFileNum; ++fileIndex) {
+        File file =
+            new File(
+                dataDir,
+                String.format(
+                    "%d-%d-0-0.tsfile",
+                    System.currentTimeMillis(), fileIndex + 1 + Args.seqFileNum));
+        TsFileWriter writer = new TsFileWriter(file, sizeForEachUnseqFile);
+        writer.write((long) fileIndex % Args.seqFileNum * stepForSeq, stepForSeq);
+      }
+    } else {
+      for (int fileIndex = 0; fileIndex < Args.unseqFileNum; ++fileIndex) {
+        File file =
+            new File(
+                dataDir,
+                String.format(
+                    "%d-%d-0-0.tsfile",
+                    System.currentTimeMillis(), fileIndex + 1 + Args.seqFileNum));
+        TsFileWriter writer = new TsFileWriter(file, sizeForEachUnseqFile);
+        writer.write(
+            Args.chunkTimeAlternating
+                ? (long) fileIndex * (stepForSeq + stepForUnseq)
+                : (long) fileIndex * stepForUnseq,
+            stepForUnseq);
       }
     }
   }
