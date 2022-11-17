@@ -253,6 +253,7 @@ set_iotdb_base_config() {
     echo " " >> test-server/conf/iotdb-engine.properties
     echo "merge_write_throughput_mb_per_sec=1024" >> test-server/conf/iotdb-engine.properties
     echo "merge_memory_budget=17179869184" >> test-server/conf/iotdb-engine.properties
+    echo "unseq_level_num=0" >> test-server/conf/iotdb-engine.properties
   fi
 }
 
@@ -323,14 +324,15 @@ init_config_for_memory_test() {
   if [ "${VERSION}" == "new" ] || [ "${VERSION}" == "NEW" ]; then
     sed -i s/#MAX_HEAP_SIZE=\"2G\"/MAX_HEAP_SIZE=\"16384M\"/g test-server/conf/datanode-env.sh
     sed -i s/#HEAP_NEWSIZE=\"2G\"/HEAP_NEWSIZE=\"16384M\"/g test-server/conf/datanode-env.sh
+    echo "sub_compaction_thread_count=80" | tee -a test-server/conf/iotdb-common.properties
   elif [ "${VERSION}" == "0.13" ]; then
     sed -i s/#MAX_HEAP_SIZE=\"2G\"/MAX_HEAP_SIZE=\"16384M\"/g test-server/conf/iotdb-env.sh
     sed -i s/#HEAP_NEWSIZE=\"2G\"/HEAP_NEWSIZE=\"16384M\"/g test-server/conf/iotdb-env.sh
-    echo "sub_compaction_thread_num=20" >> test-server/conf/iotdb-engine.properties
+    echo "sub_compaction_thread_num=80" >> test-server/conf/iotdb-engine.properties
   else
     sed -i s/#MAX_HEAP_SIZE=\"2G\"/MAX_HEAP_SIZE=\"16384M\"/g test-server/conf/iotdb-env.sh
     sed -i s/#HEAP_NEWSIZE=\"2G\"/HEAP_NEWSIZE=\"16384M\"/g test-server/conf/iotdb-env.sh
-    echo "sub_compaction_thread_num=20" >> test-server/conf/iotdb-common.properties
+    echo "merge_chunk_subthread_num=80" >> test-server/conf/iotdb-engine.properties
   fi
 }
 
@@ -395,13 +397,12 @@ run-single-memory-test(){
     fi
     IOTDB_CNT=$(jps | grep -i iotdb | wc -l)
   done
+  echo $unseq_num $OOM $IOTDB_CNT
 
   if [ "$unseq_num" -eq 0 ];then
     MEMORY_TEST_STATUS="success"
-    echo "${1}"MB pass | tee -a ../test-result.txt
   else
     MEMORY_TEST_STATUS="fail"
-    echo "${1}"MB fail | tee -a ../test-result.txt
   fi
   kill-iotdb
   mv data data-"${2}"MB
@@ -413,34 +414,47 @@ memory-test() {
   set_iotdb_base_config
   init_config_for_memory_test
 
-  curr_size=2048
-  prev_size=16384
-  diff_size=2048
-  break_upper_size=16
-  break_down_size=-16
-  while [ ${diff_size} -gt ${break_upper_size} ] || [ ${diff_size} -lt ${break_down_size} ]; do
+  local curr_size=2048
+  local prev_size=16384
+  local loweset_success=16384
+  local highest_fail=0
+  local diff_size=2048
+  local break_upper_size=2
+  local break_down_size=-2
+  while [ ${diff_size} -ge ${break_upper_size} ] || [ ${diff_size} -le ${break_down_size} ]; do
     # run the test
     run-single-memory-test $prev_size $curr_size
-    prev_size=$curr_size
     # if the test success
     if [ "${MEMORY_TEST_STATUS}" == "success" ]; then
-      curr_size=`expr "${curr_size}" "/" "2"`
+      new_size=$(( (curr_size + highest_fail) / 2 ))
+      if [ "${curr_size}" -lt "${loweset_success}" ]; then
+        loweset_success=$curr_size
+      fi
       echo $curr_size
     else
-      curr_size=`expr "(" "${curr_size}" "+" "${prev_size}" ")" "/" "2"`
+      echo ${curr_size} ${prev_size}
+      if [ "${curr_size}" -gt "${highest_fail}" ]; then
+        highest_fail=$curr_size
+      fi
+      new_size=$(( (curr_size + loweset_success) / 2 ))
     fi
+    prev_size=$curr_size
+    curr_size=$new_size
     echo New test size is ${curr_size} MB
-    diff_size=`expr "$prev_size" "-" "$curr_size"`
+    diff_size=$(( prev_size - curr_size ))
   done
+
+  date +"%Y-%m-%d %H:%M:%S" | tee -a "test-result.txt"
+  echo "Minimum success usage: ${loweset_success} MB" | tee -a test-result.txt
 }
 
 echo repository is "${REPOSITORY}"
 echo branch is "${BRANCH}"
 echo commit is "${COMMIT}"
 
-#prepare_env
+prepare_env
 
-#clone_and_compile_iotdb
+clone_and_compile_iotdb
 
 unzip_iotdb
 
